@@ -16,3 +16,18 @@ class UserSerializer(serializers.ModelSerializer):
        class Meta:
            model = User
            fields = ['id', 'username', 'email', 'role', 'phone', 'date_of_birth']
+
+
+class PatientSerializer(serializers.ModelSerializer):
+     assigned_doctor_name= serializers.CharField(source='assigned_doctor.username',read_only=True)
+
+
+     class Meta:
+          model =User
+          fields=['id','username','email','phone','date_of_birth']
+
+
+class DoctorPatientsSerializer(serializers.ModelSerializer):
+     class Meta:
+          model=User
+          fields=['id','username','email','phone','date_of_birth']

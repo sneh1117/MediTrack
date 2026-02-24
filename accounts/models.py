@@ -12,6 +12,15 @@ class User(AbstractUser):
     phone =models.CharField(max_length=15,blank=True)
     date_of_birth= models.DateField(null=True,blank=True)
 
+    assigned_doctor = models.ForeignKey(
+        'self',
+        on_delete= models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_patients',
+        limit_choices_to={'role':'doctor'}
+    )
+
 
     def __str__(self):
         return f"{self.username} ({self.role})"

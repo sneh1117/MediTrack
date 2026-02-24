@@ -1,0 +1,31 @@
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+class Symptom(models.Model):
+       user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='symptoms')
+       name = models.CharField(max_length=200)  # e.g., "Headache", "Nausea"
+       severity = models.IntegerField(
+           validators=[MinValueValidator(1), MaxValueValidator(10)],
+           help_text="Severity on scale of 1-10"
+       )
+       notes = models.TextField(blank=True)
+       logged_at = models.DateTimeField(auto_now_add=True)
+       date = models.DateField()  # Allows backdating
+       
+       # Link to medications to track correlations
+       related_medications = models.ManyToManyField(
+           'medications.Medication', 
+           blank=True,
+           related_name='symptoms'
+       )
+       
+       class Meta:
+           ordering = ['-date', '-logged_at']
+           indexes = [
+               models.Index(fields=['user', 'date']),
+               models.Index(fields=['user', 'name']),
+           ]
+       
+       def __str__(self):
+           return f"{self.name} (Severity: {self.severity}) - {self.user.username}"
