@@ -9,7 +9,8 @@ from datetime import date
 from .models import Medication
 from .serializers import MedicationSerializer
 from accounts.permissions import IsOwnerOrDoctor
-
+from . import models
+from django.db.models import Q
 class MedicationViewSet(viewsets.ModelViewSet):
        serializer_class = MedicationSerializer
        permission_classes = [IsOwnerOrDoctor]
@@ -36,7 +37,7 @@ class MedicationViewSet(viewsets.ModelViewSet):
                is_active=True,
                start_date__lte=today
            ).filter(
-               models.Q(end_date__isnull=True) | models.Q(end_date__gte=today)
+               Q(end_date__isnull=True) | Q(end_date__gte=today)
            )
            serializer = self.get_serializer(queryset, many=True)
            return Response(serializer.data)

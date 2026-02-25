@@ -8,6 +8,9 @@ from .models import Symptom
 from .serializers import SymptomSerializer, SymptomSummarySerializer
 from accounts.permissions import IsOwnerOrDoctor
 
+from django.core.cache import cache
+from .ai_service import HealthInsightsAI
+
 class SymptomViewSet(viewsets.ModelViewSet):
        serializer_class = SymptomSerializer
        permission_classes = [IsOwnerOrDoctor]
@@ -53,3 +56,29 @@ class SymptomViewSet(viewsets.ModelViewSet):
                serializer = self.get_serializer(queryset, many=True)
                return Response(serializer.data)
            return Response({"error": "medication_id parameter required"}, status=400)
+        
+       @action(detail=False,methods=['get'])
+       def ai_insights(self,request):
+           """Get AI-powered health insights"""
+           user = request.user
+           days= int(request.query_params.get('days',7))
+
+           #cache key unique to user and date
+           cache_key=f"ai_insights_{user.id}_{date.today()}"
+
+           #check cache first to avoid repeat api calls to gemini
+
+           cached_insights=cache.get(cache_key)
+           if cached_insights:
+               cached_insights['cached']=True
+               return Response(cached_insights)
+           
+           #generate new insights
+           ai=HealthInsightsAI()
+           insights =ai.analyze_symptoms(user,days)
+
+           #cache for 24 hours
+           cache.set(cache_key,insights,60*60*24)
+           insights['cached']= False
+
+           return Response (insights)

@@ -24,7 +24,7 @@ class SymptomSerializer(serializers.ModelSerializer):
 
 class SymptomSummarySerializer(serializers.Serializer):
        """For aggregated symptom data"""
-       symptom_name = serializers.CharField()
+       symptom_name = serializers.CharField(source="name")
        avg_severity = serializers.FloatField()
        count = serializers.IntegerField()
        last_occurrence = serializers.DateField()
