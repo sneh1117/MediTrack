@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'medications',
     'django_filters',
     'symptoms',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -164,4 +165,30 @@ CACHES={
         'LOCATION':'unique-snowflake',}
 }
 
+#for testing ai insights without using api tokens
+
 USE_MOCK_AI = config('USE_MOCK_AI', default=False, cast=bool)
+
+#for celery configuration
+
+# Celery Configuration
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+USE_TZ = True
+
+# Email Configuration (for development, use console backend)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@meditrack.com'
+   
+   # For production, use:
+   # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+   # EMAIL_HOST = config('EMAIL_HOST')
+   # EMAIL_PORT = config('EMAIL_PORT', cast=int)
+   # EMAIL_USE_TLS = True
+   # EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+   # EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')

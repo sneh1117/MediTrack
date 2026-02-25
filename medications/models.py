@@ -28,3 +28,17 @@ class Medication(models.Model):
 
     def __str__(self):
         return f"{self.name}-{self.dosage}({self.user.username})"
+    
+
+class MedicationReminder(models.Model):
+       medication = models.ForeignKey(Medication, on_delete=models.CASCADE, related_name='reminders')
+       sent_at = models.DateTimeField(auto_now_add=True)
+       scheduled_time = models.TimeField()
+       was_taken = models.BooleanField(default=False)
+       taken_at = models.DateTimeField(null=True, blank=True)
+       
+       class Meta:
+           ordering = ['-sent_at']
+       
+       def __str__(self):
+           return f"{self.medication.name} reminder at {self.scheduled_time}"
