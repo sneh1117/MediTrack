@@ -163,3 +163,5 @@ CACHES={
         'BACKEND':'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION':'unique-snowflake',}
 }
+
+USE_MOCK_AI = config('USE_MOCK_AI', default=False, cast=bool)
