@@ -21,16 +21,4 @@ class CustomUserAdmin(UserAdmin):
     )
 
 
-from django.db import migrations
 
-def create_superuser():
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    if not User.objects.filter(username='sneh111').exists():
-        User.objects.create_superuser(
-            username='sneh111',
-            email='sneh111@meditrack.com',
-            password='AutoChembur123*'
-        )
-
-create_superuser()
