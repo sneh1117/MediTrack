@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Symptom
+from .models import Symptom,Moodlog
 from medications.serializers import MedicationSerializer
 from datetime import date
 
@@ -28,3 +28,13 @@ class SymptomSummarySerializer(serializers.Serializer):
        avg_severity = serializers.FloatField()
        count = serializers.IntegerField()
        last_occurrence = serializers.DateField()
+
+
+class MoodLogSerializer(serializers.ModelSerializer):
+     user=serializers.HiddenField(default=serializers.CurrentUserDefault())
+     mood_display=serializers.CharField(source='get_mood_display',read_only=True)
+
+     class Meta:
+          model=Moodlog
+          fields='__all__'
+          read_only_fields=['logged_at']

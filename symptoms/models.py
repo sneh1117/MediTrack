@@ -29,3 +29,27 @@ class Symptom(models.Model):
        
        def __str__(self):
            return f"{self.name} (Severity: {self.severity}) - {self.user.username}"
+       
+
+class Moodlog(models.Model):
+     MOOD_CHOICES=(
+          (1,'Very Bad'),
+          (2,'Bad'),
+          (3,'Okay'),
+          (4,'Good'),
+          (5,'Very Good'),
+    )
+     
+     user =models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='moods')
+     mood=models.IntegerField(choices=MOOD_CHOICES)
+     notes=models.TextField(blank=True)
+     date=models.DateField()
+     logged_at=models.DateTimeField(auto_now_add=True)
+
+     class Meta:
+          ordering=["-date"]
+          unique_together=['user','date']#one mood log per day
+
+     def __str__(self):
+        return f"{self.user.username} -{self.get_mood_display()} on {self.date}"
+    

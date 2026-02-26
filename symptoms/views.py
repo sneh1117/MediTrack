@@ -5,10 +5,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Avg, Count, Max
 from datetime import date, timedelta
 from django.core.cache import cache
-from .models import Symptom
-from .serializers import SymptomSerializer, SymptomSummarySerializer
+from .models import Symptom,Moodlog
+from .serializers import SymptomSerializer, SymptomSummarySerializer,MoodLogSerializer
 from accounts.permissions import IsOwnerOrDoctor
 from .ai_service import HealthInsightsAI
+from rest_framework.permissions import IsAuthenticated
 
 class SymptomViewSet(viewsets.ModelViewSet):
     serializer_class = SymptomSerializer
@@ -87,3 +88,30 @@ class SymptomViewSet(viewsets.ModelViewSet):
         insights['cached'] = False
         
         return Response(insights)
+    
+class MoodLogViewSet(viewsets.ModelViewSet):
+    serializer_class=MoodLogSerializer
+    permission_classes=[IsAuthenticated]
+
+    def get_queryset(self):
+        return Moodlog.objects.filter(user=self.request.user)
+    
+    @action(detail=False,methods=['get'])
+    def trends(self,request):
+        """Get mood trends formatted for Chart.js"""
+        days = int(request.query_params.get('days',30))
+        start_date=date.today()-timedelta(days=days)
+
+        moods=self.get_queryset().filter(
+            date__gte=start_date
+        ).order_by('date')
+
+        return Response({
+            "labels":[m.date.strftime('%Y-%m-%d') for m in moods],
+            "datasets":[{
+                "label":"Mood",
+                "data":[m.mood for m in moods],
+                "borderColor":"rgb(153,102,255)",
+                "tension":0.1
+            }]
+        })
