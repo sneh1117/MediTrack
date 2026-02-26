@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django_filters',
     'symptoms',
     'django_celery_beat',
+    'django_ratelimit',
 ]
 
 MIDDLEWARE = [
@@ -159,10 +160,14 @@ AUTH_USER_MODEL='accounts.User'
 
 GEMINI_API_KEY =config('GEMINI_API_KEY',default='')
 
-CACHES={
+CACHES = {
     'default': {
-        'BACKEND':'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION':'unique-snowflake',}
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': config('REDIS_URL', default='redis://localhost:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
 }
 
 #for testing ai insights without using api tokens
@@ -192,3 +197,21 @@ DEFAULT_FROM_EMAIL = 'noreply@meditrack.com'
    # EMAIL_USE_TLS = True
    # EMAIL_HOST_USER = config('EMAIL_HOST_USER')
    # EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+
+#Security settings(only enforced when DEBUG=FALSE)
+
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT=True
+    SESSION_COOKIE_SECURE=True
+    CSRF_COOKIE_SECURE=True
+    SECURE_BROWSER_XSS_FILTER =True
+    SECURE_CONTENT_TYPE_NOSNIFF=True
+    X_FRAME_OPTIONS='DENY'
+    SECURE_HSTS_SECONDS=3153600
+    SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+    SECURE_HSTS_PRELOAD=True
+
+#CORS 
+CORS_ALLOW_CREDENTIALS=True
+CORS_ALLOWED_ORIGINS=config('CORS_ORIGINS',default='http://localhost:3000').split(',')

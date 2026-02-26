@@ -1,15 +1,15 @@
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
-
+from core.validators import validate_no_html
 class Symptom(models.Model):
        user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='symptoms')
-       name = models.CharField(max_length=200)  # e.g., "Headache", "Nausea"
+       name = models.CharField(max_length=200,validators=[validate_no_html])  # e.g., "Headache", "Nausea"
        severity = models.IntegerField(
            validators=[MinValueValidator(1), MaxValueValidator(10)],
            help_text="Severity on scale of 1-10"
        )
-       notes = models.TextField(blank=True)
+       notes = models.TextField(blank=True,validators=[validate_no_html])
        logged_at = models.DateTimeField(auto_now_add=True)
        date = models.DateField()  # Allows backdating
        

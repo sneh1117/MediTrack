@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from core.validators import validate_no_html
 
 
 class Medication(models.Model):
@@ -12,8 +13,8 @@ class Medication(models.Model):
     )
 
     user=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='medications')
-    name=models.CharField(max_length=200)
-    dosage=models.CharField(max_length=100)
+    name=models.CharField(max_length=200,validators=[validate_no_html])
+    dosage=models.CharField(max_length=100,validators=[validate_no_html])
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES)
     custom_schedule = models.JSONField(null=True, blank=True)  # e.g., ["08:00", "14:00", "20:00"]
     start_date = models.DateField()

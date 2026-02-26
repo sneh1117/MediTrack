@@ -9,11 +9,12 @@ from datetime import date
 from .models import Medication
 from .serializers import MedicationSerializer
 from accounts.permissions import IsOwnerOrDoctor
+from rest_framework.permissions import IsAuthenticated
 from . import models
 from django.db.models import Q
 class MedicationViewSet(viewsets.ModelViewSet):
        serializer_class = MedicationSerializer
-       permission_classes = [IsOwnerOrDoctor]
+       permission_classes = [IsAuthenticated, IsOwnerOrDoctor]
        filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
        filterset_fields = ['is_active', 'frequency']
        search_fields = ['name', 'dosage']

@@ -12,12 +12,24 @@ class IsDoctor(permissions.BasePermission):
     
 class IsOwnerOrDoctor(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        #Patients can only access thier own data
-        #doctors can access thier assigned patients data
-        if request.user.role =='patient':
-           return obj.user ==request.user
-        elif request.user.role =='doctor':
-            return obj.user.assigned_patients.all()
+        #Blocks unautheticated user immediately
+        if not request.user.is_authenticated:
+            return False
+        
+        obj_user= getattr(obj,'user',None)
+        if obj_user is None:
+            return False
+        
+        #Patients can only access their own data 
+
+        if request.user.role=='patient':
+            return obj_user == request.user
+        
+        #Doctors can only access their ASSIGNED patient's data
+
+        elif request.user.role=='doctor':
+            return obj_user in request.user.assigned_patients.all()
+        
         return False
         
 

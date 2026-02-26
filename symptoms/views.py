@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 
 class SymptomViewSet(viewsets.ModelViewSet):
     serializer_class = SymptomSerializer
-    permission_classes = [IsOwnerOrDoctor]
+    permission_classes = [IsAuthenticated,IsOwnerOrDoctor]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['name', 'severity', 'date']
     search_fields = ['name', 'notes']
