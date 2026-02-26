@@ -239,5 +239,7 @@ if not DEBUG:
 CORS_ALLOW_CREDENTIALS=True
 CORS_ALLOWED_ORIGINS=config('CORS_ORIGINS',default='http://localhost:3000').split(',')
 
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://meditrack.up.railway.app',
+]
 
