@@ -8,7 +8,7 @@ genai.configure(api_key=settings.GEMINI_API_KEY)
 
 class HealthInsightsAI:
     def __init__(self):
-        self.model = genai.GenerativeModel('models/gemini-2.0-flash')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
     
     def analyze_symptoms(self, user, days=7):
         """Analyze user's symptoms from the last N days"""

@@ -177,7 +177,7 @@ CORS_ALLOWED_ORIGINS=[
 AUTH_USER_MODEL='accounts.User'
 
 
-GEMINI_API_KEY =config('GEMINI_API_KEY',default='')
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 CACHES = {
     'default': {
