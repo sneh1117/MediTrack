@@ -61,21 +61,23 @@ class SymptomViewSet(viewsets.ModelViewSet):
     def ai_insights(self, request):
         """Get AI-powered health insights"""
         user = request.user
-        days = int(request.query_params.get('days', 7))
+        #safe days parsing
+        try:
+            days = int(request.query_params.get('days', 7))
+        except (TypeError, ValueError):
+            days = 7
         
-        # Cache key unique to user and date
-        cache_key = f"ai_insights_{user.id}_{date.today()}"
-        
+         # Dynamic Cache key (auto refresh when new symptoms added)
+        latest_symptom = self.get_queryset().order_by('-logged_at').first()
+        latest_ts = latest_symptom.logged_at.timestamp() if latest_symptom else 0
+
+        cache_key = f"ai_insights_{user.id}_{days}_{latest_ts}"
+
         # Check cache first (avoid repeated API calls)
         cached_insights = cache.get(cache_key)
         if cached_insights:
-            # Don't return cached errors
-            if 'error' not in cached_insights:
-                cached_insights['cached'] = True
-                return Response(cached_insights)
-            else:
-                # Clear cached error and try again
-                cache.delete(cache_key)
+            cached_insights['cached'] = True
+            return Response(cached_insights)
         
         # Generate new insights
         ai = HealthInsightsAI()
@@ -83,7 +85,7 @@ class SymptomViewSet(viewsets.ModelViewSet):
         
         # Only cache successful responses (not errors)
         if 'error' not in insights:
-            cache.set(cache_key, insights, 60 * 60 * 24)  # Cache for 24 hours
+            cache.set(cache_key, insights, 60 * 60 * 6)  # Cache for 6 hours
         
         insights['cached'] = False
         
