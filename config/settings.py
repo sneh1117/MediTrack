@@ -12,13 +12,11 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 from decouple import config
+import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-fy-ki7by*d-j-g+09ied7rb%o!4t(_74ko)bb(hsu&#sn^#rt@'
@@ -39,19 +37,24 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'django_celery_beat',
+    'django_ratelimit',
+    'drf_spectacular',
+
+
     'accounts',
     'medications',
     'django_filters',
     'symptoms',
-    'django_celery_beat',
-    'django_ratelimit',
-    'drf_spectacular',
+    
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -60,7 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    
     
 ]
 
@@ -88,14 +91,14 @@ from decouple import config
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 import dj_database_url
-import os
+
 # Development: Using SQLite (switch to PostgreSQL for production)
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
+   'default': dj_database_url.config(
+    default=os.environ.get('DATABASE_URL'),
+    conn_max_age=600,
+    conn_health_checks=True,
+)
 }
 
 
@@ -168,10 +171,19 @@ SIMPLE_JWT={
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
-CORS_ALLOWED_ORIGINS=[
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://medi-track-frontend-phi.vercel.app/",
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://meditrack.up.railway.app',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
 ]
 
 AUTH_USER_MODEL='accounts.User'
@@ -218,8 +230,7 @@ DEFAULT_FROM_EMAIL = 'noreply@meditrack.com'
    # EMAIL_HOST_USER = config('EMAIL_HOST_USER')
    # EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
-#Security settings(only enforced when DEBUG=FALSE)
-import dj_database_url
+
 
 if not DEBUG:
     SECURE_SSL_REDIRECT=True
@@ -232,16 +243,16 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS=True
     SECURE_HSTS_PRELOAD=True
     # Database — switches to Railway's PostgreSQL in production
-    DATABASES['default'] = dj_database_url.config(
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
+    # DATABASES['default'] = dj_database_url.config(
+   #     conn_max_age=600,
+   #     conn_health_checks=True,
+   # )
 
-#CORS 
-CORS_ALLOW_CREDENTIALS=True
-CORS_ALLOWED_ORIGINS=config('CORS_ORIGINS',default='http://localhost:3000').split(',')
-
-CSRF_TRUSTED_ORIGINS = [
-    'https://meditrack.up.railway.app',
-]
+    # Look for this in config/settings.py
+#DATABASES = {
+    #'default': {
+     #   'ENGINE': 'django.db.backends.sqlite3',
+      #  'NAME': BASE_DIR / 'db.sqlite3',
+    #}
+#}
 
