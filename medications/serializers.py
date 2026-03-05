@@ -5,6 +5,7 @@ from datetime import date
 class MedicationSerializer(serializers.ModelSerializer):
        user = serializers.HiddenField(default=serializers.CurrentUserDefault())
        is_current = serializers.SerializerMethodField()
+       end_date = serializers.DateField(required=False, allow_null=True) 
        
        class Meta:
            model = Medication
