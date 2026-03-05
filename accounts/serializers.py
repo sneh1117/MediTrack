@@ -40,7 +40,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'phone', 'date_of_birth']
+        fields = ['id', 'username', 'email', 'role', 'phone', 'date_of_birth','email_digest_enabled']
 
 
 class PatientSerializer(serializers.ModelSerializer):

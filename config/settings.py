@@ -91,14 +91,7 @@ from decouple import config
 
 import dj_database_url
 
-# Development: Using SQLite (switch to PostgreSQL for production) 
-DATABASES = {
-   'default': dj_database_url.config(
-    default=os.environ.get('DATABASE_URL'),
-    conn_max_age=600,
-    conn_health_checks=True,
-)
-}
+
 
 
 # Password validation
@@ -244,9 +237,18 @@ if not DEBUG:
  
 # Unhash the below for local testing 
 #DATABASES = {
- #   'default': {
-  #      'ENGINE': 'django.db.backends.sqlite3',
-   #     'NAME': BASE_DIR / 'db.sqlite3',
+#   'default': {
+       # 'ENGINE': 'django.db.backends.sqlite3',
+       # 'NAME': BASE_DIR / 'db.sqlite3',
     #}
 #}
 
+
+# Development: Using SQLite (switch to PostgreSQL for production) 
+DATABASES = {
+  'default': dj_database_url.config(
+    default=os.environ.get('DATABASE_URL'),
+    conn_max_age=600,
+    conn_health_checks=True,
+)
+}

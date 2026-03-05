@@ -13,4 +13,10 @@ app.conf.beat_schedule = {
         'task': 'medications.tasks.send_medication_reminders',
         'schedule': crontab(minute=0),
     },
+
+     'send-weekly-digest-sunday-9am': {           
+        'task': 'medications.tasks.send_weekly_digest',
+        'schedule': crontab(hour=9, minute=0, day_of_week=0),  # Sunday 09:00 UTC
+    },
 }
+

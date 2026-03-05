@@ -11,7 +11,7 @@ class User(AbstractUser):
     role =models.CharField(max_length=50,choices=ROLE_CHOICES,default='patient')
     phone =models.CharField(max_length=15,blank=True)
     date_of_birth= models.DateField(null=True,blank=True)
-
+    email_digest_enabled=models.BooleanField(default=True)
     assigned_doctor = models.ForeignKey(
         'self',
         on_delete= models.SET_NULL,
