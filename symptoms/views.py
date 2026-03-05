@@ -122,4 +122,27 @@ class MoodLogViewSet(viewsets.ModelViewSet):
         })
     
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_health_report(request):
+    try:
+        days = int(request.query_params.get('days', 30))
+        days = max(1, min(days, 365))
+    except (TypeError, ValueError):
+        days = 30
 
+    if request.user.role == 'doctor':
+        from rest_framework.response import Response
+        from rest_framework import status
+        return Response(
+            {'error': 'Doctors cannot export personal health reports.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    pdf_bytes = generate_health_report(request.user, days=days)
+    filename = f"meditrack_report_{request.user.username}_{days}days.pdf"
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Content-Length'] = len(pdf_bytes)
+    return response
