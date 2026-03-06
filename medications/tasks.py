@@ -28,7 +28,7 @@ def send_medication_reminders():
         should_remind = False
 
         # Frequency rules
-        if med.frequency == 'once_daily' and current_hour == 8:
+        if med.frequency == 'once_daily': # and current_hour == 8:
             should_remind = True
 
         elif med.frequency == 'twice_daily' and current_hour in [8, 20]:
