@@ -82,7 +82,7 @@ def send_medication_reminders():
 
     logger.info(f"🎯 Total emails sent: {sent}")
 
-    return f"Sent {sent} reminders"
+    return f"Sent {sent} reminders" #for it to not crash and redeply properly 
 
 @shared_task
 def send_reminder_notification(medication_id):
