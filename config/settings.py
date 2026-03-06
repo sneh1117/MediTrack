@@ -210,6 +210,16 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 USE_TZ = True
 
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'send-medication-reminders-every-minute': {
+        'task': 'medications.tasks.send_medication_reminders',
+        'schedule': crontab(minute='*'),  # every minute
+    },
+}
+
+
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=465, cast=int)
