@@ -185,7 +185,7 @@ def send_reminder_notification(medication_id):
             to=[user.email],
         )
         email.attach_alternative(html_message, "text/html")
-        email.send(fail_silently=True)
+        email.send(fail_silently=False)
 
         return f"Reminder sent to {user.username}"
 
@@ -466,7 +466,7 @@ def send_weekly_digest():
                 to=[user.email],
             )
             email.attach_alternative(html_message, "text/html")
-            email.send(fail_silently=True)
+            email.send(fail_silently=False)
             emails_sent += 1
 
     return f"Weekly digest sent to {emails_sent} patients"
