@@ -12,28 +12,54 @@ from celery import shared_task
 from django.core.mail import send_mail
 from django.utils import timezone
 from .models import Medication
-#works locally on python shell
-from medications.models import Medication
+from celery import shared_task
 from django.core.mail import send_mail
+from django.conf import settings
+from django.utils.timezone import now
+import logging
+
+from .models import Medication
+
+logger = logging.getLogger(__name__)
+
 
 @shared_task
 def send_medication_reminders():
-    medications = Medication.objects.filter(is_active=True)
+    logger.info("🚀 Medication reminder task started")
 
-    count = 0
+    today = now().date()
+    logger.info(f"📅 Checking medications for date: {today}")
+
+    medications = Medication.objects.filter(start_date=today)
+
+    logger.info(f"💊 Medications found: {medications.count()}")
+
+    sent = 0
 
     for med in medications:
-        if med.user.email:
+        try:
+            email = med.user.email
+
+            logger.info(f"📨 Attempting email to {email} for {med.name}")
+
             send_mail(
-                "Medication Reminder",
-                f"Reminder to take {med.name}",
-                "snaik0704@gmail.com",
-                [med.user.email],
+                subject="Medication Reminder",
+                message=f"Reminder to take {med.name} ({med.dosage})",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
                 fail_silently=False,
             )
-            count += 1
 
-    return f"Sent {count} reminders"
+            logger.info(f"✅ Email sent to {email}")
+
+            sent += 1
+
+        except Exception as e:
+            logger.error(f"❌ Failed sending email to {email}: {str(e)}")
+
+    logger.info(f"🎯 Total emails sent: {sent}")
+
+    return f"Sent {sent} reminders"
 
 @shared_task
 def send_reminder_notification(medication_id):
