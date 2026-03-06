@@ -12,8 +12,7 @@ from celery import shared_task
 from django.core.mail import send_mail
 from django.utils import timezone
 from .models import Medication
-
-
+#works locally on python shell
 @shared_task
 def send_medication_reminders():
     today = timezone.now().date()
