@@ -24,9 +24,19 @@ SECRET_KEY = 'django-insecure-fy-ki7by*d-j-g+09ied7rb%o!4t(_74ko)bb(hsu&#sn^#rt@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# Allowed hosts — reads from .env in production
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
-
+ALLOWED_HOSTS = [
+    "meditrack.up.railway.app",
+    "meditrack1.up.railway.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://meditrack7.vercel.app",
+    'https://meditrack.up.railway.app',
+    'https://meditrack1.up.railway.app',
+    "localhost",
+    "127.0.0.1"
+]
 
 # Application definition
 
