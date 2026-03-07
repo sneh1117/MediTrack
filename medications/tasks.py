@@ -43,7 +43,12 @@ def send_medication_reminders():
     today = now().date()
     logger.info(f"📅 Checking medications for date: {today}")
 
-    medications = Medication.objects.filter(start_date=today)
+    medications = Medication.objects.filter(
+    is_active=True,
+    start_date__lte=today,
+).filter(
+    models.Q(end_date__isnull=True) | models.Q(end_date__gte=today)
+)
 
     logger.info(f"💊 Medications found: {medications.count()}")
 
