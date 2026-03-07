@@ -12,6 +12,8 @@ from .models import Medication, MedicationReminder
 
 logger = logging.getLogger(__name__)
 
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 
 @shared_task
 def send_medication_reminders():
@@ -29,33 +31,44 @@ def send_medication_reminders():
 
     logger.info(f"💊 Medications found: {medications.count()}")
 
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = os.getenv('BREVO_API_KEY')
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+
     sent = 0
 
     for med in medications:
         try:
             email = med.user.email
-
             if not email:
-                logger.warning(f"⚠️ No email for user {med.user.username}, skipping")
                 continue
 
             logger.info(f"📨 Attempting email to {email} for {med.name}")
 
-            send_mail(
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": email, "name": med.user.username}],
+                sender={"email": "snaik0704@gmail.com", "name": "MediTrack"},
                 subject=f"💊 Reminder: Take {med.name}",
-                message=f"Hi {med.user.username},\n\nThis is a reminder to take {med.name} - {med.dosage}.\n\nStay healthy!\n— MediTrack",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                fail_silently=False,
+                html_content=f"""
+                <h2>Medication Reminder</h2>
+                <p>Hi {med.user.username},</p>
+                <p>This is a reminder to take:</p>
+                <b>{med.name}</b><br>
+                Dosage: {med.dosage}
+                <br><br>
+                Stay healthy! 💊
+                """
             )
 
+            api_instance.send_transac_email(send_smtp_email)
             logger.info(f"✅ Email sent to {email}")
             sent += 1
+            time.sleep(0.5)
 
-            time.sleep(1)  # avoid hitting Gmail rate limits
-
+        except ApiException as e:
+            logger.error(f"❌ Brevo API error for {med.name}: {str(e)}")
         except Exception as e:
-            logger.error(f"❌ Failed sending email to {email}: {str(e)}")
+            logger.error(f"❌ Failed sending email for {med.name}: {str(e)}")
 
     logger.info(f"🎯 Total emails sent: {sent}")
     return f"Sent {sent} reminders"
