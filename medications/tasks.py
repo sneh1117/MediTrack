@@ -1,39 +1,16 @@
-from celery import shared_task
-from django.utils import timezone
-from django.db import models
-from .models import Medication, MedicationReminder
-from django.core.mail import send_mail
-from django.conf import settings
-from datetime import time,date,timedelta
-from django.db.models import Avg,Count
-
-
-from celery import shared_task
-from django.core.mail import send_mail
-from django.utils import timezone
-from .models import Medication
-from celery import shared_task
-from django.core.mail import send_mail
-from django.conf import settings
-from django.utils.timezone import now
-import logging
-
-from .models import Medication
-
-logger = logging.getLogger(__name__)
-
-
 import os
-import resend
-from celery import shared_task
-from django.conf import settings
-from django.utils.timezone import now
-from .models import Medication
+import time
 import logging
+from datetime import date, timedelta
+from django.db import models
+from django.db.models import Avg, Count
+from django.conf import settings
+from django.core.mail import send_mail, EmailMultiAlternatives
+from django.utils.timezone import now
+from celery import shared_task
+from .models import Medication, MedicationReminder
 
 logger = logging.getLogger(__name__)
-
-resend.api_key = os.getenv("RESEND_API_KEY")
 
 
 @shared_task
@@ -44,11 +21,11 @@ def send_medication_reminders():
     logger.info(f"📅 Checking medications for date: {today}")
 
     medications = Medication.objects.filter(
-    is_active=True,
-    start_date__lte=today,
-).filter(
-    models.Q(end_date__isnull=True) | models.Q(end_date__gte=today)
-)
+        is_active=True,
+        start_date__lte=today,
+    ).filter(
+        models.Q(end_date__isnull=True) | models.Q(end_date__gte=today)
+    )
 
     logger.info(f"💊 Medications found: {medications.count()}")
 
@@ -58,36 +35,30 @@ def send_medication_reminders():
         try:
             email = med.user.email
 
+            if not email:
+                logger.warning(f"⚠️ No email for user {med.user.username}, skipping")
+                continue
+
             logger.info(f"📨 Attempting email to {email} for {med.name}")
 
-            resend.Emails.send({
-                "from": "MediTrack <onboarding@resend.dev>",
-                "to": [email],
-                "subject": "Medication Reminder",
-                "html": f"""
-                <h2>Medication Reminder</h2>
-                <p>Hi {med.user.username},</p>
-
-                <p>This is a reminder to take:</p>
-
-                <b>{med.name}</b><br>
-                Dosage: {med.dosage}
-
-                <br><br>
-                Stay healthy! 💊
-                """
-            })
+            send_mail(
+                subject=f"💊 Reminder: Take {med.name}",
+                message=f"Hi {med.user.username},\n\nThis is a reminder to take {med.name} - {med.dosage}.\n\nStay healthy!\n— MediTrack",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
 
             logger.info(f"✅ Email sent to {email}")
-
             sent += 1
+
+            time.sleep(1)  # avoid hitting Gmail rate limits
 
         except Exception as e:
             logger.error(f"❌ Failed sending email to {email}: {str(e)}")
 
     logger.info(f"🎯 Total emails sent: {sent}")
-
-    return f"Sent {sent} reminders" 
+    return f"Sent {sent} reminders"
 
 @shared_task
 def send_reminder_notification(medication_id):
