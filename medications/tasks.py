@@ -64,6 +64,7 @@ def send_medication_reminders():
             logger.info(f"✅ Email sent to {email}")
             sent += 1
             time.sleep(0.5)
+            configuration.api_key['api-key'] = os.getenv('BREVO_API_KEY', '').strip()
 
         except ApiException as e:
             logger.error(f"❌ Brevo API error for {med.name}: {str(e)}")
