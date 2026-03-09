@@ -12,6 +12,7 @@ class User(AbstractUser):
     phone =models.CharField(max_length=15,blank=True)
     date_of_birth= models.DateField(null=True,blank=True)
     email_digest_enabled=models.BooleanField(default=True)
+    email = models.EmailField(unique=True, blank=False)
     assigned_doctor = models.ForeignKey(
         'self',
         on_delete= models.SET_NULL,

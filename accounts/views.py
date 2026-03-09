@@ -4,6 +4,10 @@ from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.conf import settings
 
 from .serializers import (
     UserRegistrationSerializer, 
@@ -94,3 +98,123 @@ class AssignDoctorView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+    
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.conf import settings
+from django.db import IntegrityError
+
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.conf import settings
+from django.db import IntegrityError
+import time
+
+# Google OAuth Login with clock skew tolerance
+class GoogleAuthView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        token = request.data.get('token')
+        
+        if not token:
+            return Response({'error': 'Token required'}, status=400)
+
+        try:
+            # Verify token with Google with clock skew tolerance
+            idinfo = id_token.verify_oauth2_token(
+                token,
+                google_requests.Request(),
+                settings.GOOGLE_OAUTH_CLIENT_ID,
+                clock_skew_in_seconds=10  # Allow 10 seconds clock skew
+            )
+
+            email = idinfo.get('email')
+            name = idinfo.get('name', '')
+            google_id = idinfo.get('sub')
+
+            if not email:
+                return Response({'error': 'Email not provided by Google'}, status=400)
+
+            # Check if user exists by email
+            user = User.objects.filter(email=email).first()
+
+            if user:
+                # Existing user — just log them in
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh),
+                    'is_new_user': False,
+                }, status=200)
+            else:
+                # New user — return Google data
+                return Response({
+                    'is_new_user': True,
+                    'email': email,
+                    'name': name,
+                    'google_id': google_id,
+                }, status=200)
+
+        except ValueError as e:
+            print(f"❌ Token verification error: {str(e)}")
+            return Response({'error': f'Invalid token: {str(e)}'}, status=400)
+        except Exception as e:
+            print(f"❌ Unexpected error: {str(e)}")
+            return Response({'error': 'Authentication failed'}, status=500)
+
+
+# Complete Google OAuth Registration
+class GoogleRegisterCompleteView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        username = request.data.get('username')
+        google_id = request.data.get('google_id')
+        role = request.data.get('role', 'patient')
+        name = request.data.get('name', '')
+
+        # Validation
+        if not all([email, username, google_id]):
+            return Response({'error': 'Missing required fields'}, status=400)
+
+        # Check username uniqueness
+        if User.objects.filter(username=username).exists():
+            return Response({'error': 'Username already taken'}, status=400)
+
+        # Check email uniqueness
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'Email already registered'}, status=400)
+
+        try:
+            # Split name into first/last
+            name_parts = name.split(' ', 1)
+            first_name = name_parts[0] if name_parts else ''
+            last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+            # Create user without password (OAuth user)
+            user = User.objects.create(
+                username=username,
+                email=email,
+                role=role,
+                first_name=first_name,
+                last_name=last_name,
+            )
+            user.set_unusable_password()
+            user.save()
+
+            # Generate tokens
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'is_new_user': False,
+            }, status=201)
+
+        except IntegrityError as e:
+            return Response({'error': 'User creation failed. Please try again.'}, status=400)
+        except Exception as e:
+            return Response({'error': f'Registration failed: {str(e)}'}, status=500)

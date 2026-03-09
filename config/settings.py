@@ -174,6 +174,8 @@ SIMPLE_JWT={
 }
 
 CORS_ALLOW_CREDENTIALS = True
+# After CORS_ALLOW_CREDENTIALS and CORS_ALLOWED_ORIGINS
+CORS_EXPOSE_HEADERS = ['Content-Type', 'Authorization']
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -243,12 +245,12 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD=True
  
 # Unhash the below for local testing 
-# DATABASES = {
-  # 'default': {
-    #   'ENGINE': 'django.db.backends.sqlite3',
-     # 'NAME': BASE_DIR / 'db.sqlite3',
-# }
-# }
+#DATABASES = {
+ #  'default': {
+#      'ENGINE': 'django.db.backends.sqlite3',
+  #    'NAME': BASE_DIR / 'db.sqlite3',
+ #}
+ #}
 
 
 # Development: Using SQLite (switch to PostgreSQL for production) 
@@ -259,3 +261,11 @@ DATABASES = {
 conn_health_checks=True,
 )
 }
+
+#Google Oauth for direct google login 
+
+GOOGLE_OAUTH_CLIENT_ID=config('GOOGLE_CLIENT_ID',default='')
+GOOGLE_OAUTH_CLIENT_SECRET=config('GOOGLE_CLIENT_SECRET',default='')
+
+# Google OAuth - Cross-Origin Policy
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
