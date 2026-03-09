@@ -12,6 +12,7 @@ A production-ready REST API for managing medications, tracking symptoms, and get
 
 **Authentication & Access**
 - JWT Authentication — Secure token-based auth with access & refresh tokens
+- Google OAuth 2.0 Integration — One-click sign-in/sign-up with Google accounts
 - Role-Based Access Control — Separate Patient and Doctor roles with distinct permissions
 - Doctor-Patient Relationships — Doctors can be assigned to patients and view their data
 
@@ -34,6 +35,7 @@ A production-ready REST API for managing medications, tracking symptoms, and get
 **Security & Quality**
 - Rate Limiting — Brute-force protection on auth endpoints
 - Input Sanitization — XSS prevention via HTML tag validation on all user inputs
+- OAuth Token Verification — Server-side Google token validation with clock skew tolerance
 - Auto-Generated API Docs — Swagger UI powered by drf-spectacular
 
 ---
@@ -43,7 +45,8 @@ A production-ready REST API for managing medications, tracking symptoms, and get
 | Layer | Technology |
 |-------|-----------|
 | Backend | Django 4.2 + Django REST Framework |
-| Authentication | djangorestframework-simplejwt |
+| Authentication | djangorestframework-simplejwt + Google OAuth 2.0 |
+| OAuth Library | google-auth + google-auth-httplib2 |
 | Database | PostgreSQL (Railway) |
 | Task Queue | Celery 5.3 + Redis |
 | AI | Google Gemini API (gemini-pro) |
@@ -56,7 +59,6 @@ A production-ready REST API for managing medications, tracking symptoms, and get
 ---
 
 ## 📦 Local Installation
-
 ```bash
 # Clone the repository
 git clone https://github.com/sneh1117/MediTrack.git
@@ -85,7 +87,6 @@ python manage.py runserver
 ```
 
 To run Celery (required for reminders and digest emails), open two additional terminals:
-
 ```bash
 # Terminal 2 — Celery worker
 celery -A config worker --loglevel=info --concurrency=1
@@ -99,7 +100,6 @@ celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:
 ## 🔑 Environment Variables
 
 Copy `.env.example` to `.env` and fill in your values:
-
 ```env
 DEBUG=True
 SECRET_KEY=your-strong-secret-key
@@ -113,6 +113,10 @@ DB_PORT=5432
 
 # Google Gemini AI
 GEMINI_API_KEY=your_gemini_api_key
+
+# Google OAuth 2.0
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 # Redis (Celery)
 REDIS_URL=redis://localhost:6379/0
@@ -128,12 +132,53 @@ EMAIL_HOST_PASSWORD=your_gmail_app_password
 DEFAULT_FROM_EMAIL=MediTrack <your_email@gmail.com>
 
 # CORS
-CORS_ORIGINS=http://localhost:3000
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
 
 > **Note:** For local development, `EMAIL_BACKEND` defaults to `console` — emails print to terminal instead of sending. No SMTP setup needed locally.
 
 > **Gmail App Password:** Go to myaccount.google.com → Security → App Passwords → create one named "MediTrack". Use this 16-character password, not your regular Gmail password.
+
+---
+
+## 🔐 Google OAuth Setup
+
+### 1. Create Google Cloud Project
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project or select existing one
+3. Enable **Google+ API**
+
+### 2. Create OAuth 2.0 Credentials
+
+1. Go to **APIs & Services** → **Credentials**
+2. Click **Create Credentials** → **OAuth 2.0 Client ID**
+3. Configure consent screen if prompted (External, add app name)
+4. Application type: **Web application**
+5. Add **Authorized JavaScript origins:**
+   - `http://localhost:5173` (development)
+   - `https://meditrack7.vercel.app` (production)
+6. Add **Authorized redirect URIs:**
+   - `http://localhost:5173`
+   - `https://meditrack7.vercel.app`
+7. Copy **Client ID** and **Client Secret**
+8. Add to `.env` file
+
+### 3. OAuth Flow
+
+**New User Registration:**
+1. Frontend sends Google credential token to `/api/auth/google/`
+2. Backend verifies token with Google's API
+3. Returns `is_new_user: true` with email and name
+4. Frontend collects username and role
+5. Frontend sends to `/api/auth/google/complete/`
+6. Backend creates user account (no password)
+7. Returns JWT tokens → user logged in
+
+**Existing User Login:**
+1. Frontend sends Google credential token to `/api/auth/google/`
+2. Backend verifies token and finds existing user by email
+3. Returns JWT tokens → user logged in directly
 
 ---
 
@@ -145,10 +190,69 @@ CORS_ORIGINS=http://localhost:3000
 |--------|----------|-------------|---------------|
 | POST | `/api/auth/register/` | Register a new user | No |
 | POST | `/api/auth/login/` | Get JWT access + refresh tokens | No |
+| POST | `/api/auth/google/` | **Google OAuth login/signup** | No |
+| POST | `/api/auth/google/complete/` | **Complete Google OAuth registration** | No |
 | POST | `/api/auth/token/refresh/` | Refresh access token | No |
 | GET/PUT/PATCH | `/api/auth/profile/` | View or update your profile (includes email_digest_enabled) | Yes |
 | GET | `/api/auth/patients/` | List assigned patients (doctors only) | Yes |
 | PUT | `/api/auth/assign-doctor/` | Assign a doctor to your account (patients only) | Yes |
+
+**Google OAuth Endpoints:**
+
+**`POST /api/auth/google/`**
+- Validates Google credential token
+- Returns JWT tokens for existing users
+- Returns user data for new users (requires username selection)
+
+Request body:
+```json
+{
+  "token": "google_credential_token"
+}
+```
+
+Response (existing user):
+```json
+{
+  "access": "jwt_access_token",
+  "refresh": "jwt_refresh_token",
+  "is_new_user": false
+}
+```
+
+Response (new user):
+```json
+{
+  "is_new_user": true,
+  "email": "user@gmail.com",
+  "name": "John Doe",
+  "google_id": "google_user_id"
+}
+```
+
+**`POST /api/auth/google/complete/`**
+- Completes registration for new Google users
+- Creates account without password
+
+Request body:
+```json
+{
+  "email": "user@gmail.com",
+  "username": "john_doe",
+  "google_id": "google_user_id",
+  "name": "John Doe",
+  "role": "patient"
+}
+```
+
+Response:
+```json
+{
+  "access": "jwt_access_token",
+  "refresh": "jwt_refresh_token",
+  "is_new_user": false
+}
+```
 
 ### Medications (`/api/medications/`)
 
@@ -242,12 +346,15 @@ Patients can toggle this on/off from their profile settings.
 ## 🔒 Security
 
 - JWT authentication with configurable token lifetimes (1hr access, 7 day refresh)
+- **Google OAuth 2.0** with server-side token verification and clock skew tolerance
+- **OAuth users** have unusable passwords (cannot login with traditional credentials)
 - Role-based permissions — patients and doctors only access appropriate data
 - Object-level permissions — users can only access their own records
 - Rate limiting — registration capped at 5/hour, login at 10/hour per IP
 - Input sanitization — HTML tags blocked on all text fields to prevent XSS
 - CSRF trusted origins configured for production domain
 - HTTPS enforced in production with HSTS headers
+- Cross-Origin-Opener-Policy configured for OAuth popup flows
 - Environment-based configuration — no secrets in codebase
 
 ---
@@ -255,7 +362,6 @@ Patients can toggle this on/off from their profile settings.
 ## 📊 Dashboard Response Format
 
 The `/api/dashboard/` endpoint returns data pre-formatted for Chart.js:
-
 ```json
 {
   "symptom_trends": {
@@ -295,12 +401,13 @@ This project is deployed on Railway with three separate services:
 - Redis database
 
 **Required environment variables in Railway dashboard:**
-
 ```
 DEBUG=False
 SECRET_KEY=
 ALLOWED_HOSTS=your-app.up.railway.app
 GEMINI_API_KEY=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 CORS_ORIGINS=https://your-frontend.com
 CSRF_TRUSTED_ORIGINS=https://your-app.up.railway.app
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
@@ -319,7 +426,7 @@ DEFAULT_FROM_EMAIL=MediTrack <your_email@gmail.com>
 
 ## 📚 API Documentation
 
-Interactive Swagger UI is available at `/api/docs/`. Authenticate using a JWT token from `/api/auth/login/`.
+Interactive Swagger UI is available at `/api/docs/`. Authenticate using a JWT token from `/api/auth/login/` or `/api/auth/google/`.
 
 To regenerate the OpenAPI schema locally:
 ```bash
@@ -329,7 +436,6 @@ python manage.py spectacular --color --file schema.yml
 ---
 
 ## 🧪 Running Tests
-
 ```bash
 python manage.py test
 ```
@@ -337,11 +443,10 @@ python manage.py test
 ---
 
 ## 📁 Project Structure
-
 ```
 meditrack/
 ├── config/               # Django project settings, URLs, Celery config
-├── accounts/             # Custom user model, auth, doctor-patient permissions
+├── accounts/             # Custom user model, auth, Google OAuth, doctor-patient permissions
 ├── medications/          # Medication CRUD, reminders, adherence tracking
 ├── symptoms/             # Symptom logging, AI insights, dashboard, mood tracking, PDF reports
 ├── core/                 # Shared validators and middleware
@@ -353,6 +458,31 @@ meditrack/
 
 ---
 
+## 🔧 Troubleshooting
+
+**Google OAuth Errors:**
+
+**"Invalid Google token"**
+- Verify `GOOGLE_CLIENT_ID` in Railway environment variables
+- Check that Google+ API is enabled in Google Cloud Console
+- Ensure authorized origins include your frontend URL
+
+**"Token used too early" (clock skew error)**
+- Already handled with 10-second clock skew tolerance in token verification
+- If persists, check server time is synchronized
+
+**"Origin not allowed"**
+- Verify frontend URL is in Google Console authorized JavaScript origins
+- Wait 5-10 minutes for Google's changes to propagate
+- Check CORS settings include frontend URL
+
+**Email not working:**
+- For Gmail, use an **App Password**, not your regular password
+- In Railway, ensure all email env vars are set correctly
+- Check Gmail hasn't blocked sign-in attempts
+
+---
+
 ## 🔮 Roadmap
 
 - [ ] WebSocket support for real-time push notifications (Django Channels)
@@ -360,6 +490,8 @@ meditrack/
 - [ ] Predictive analytics and trend forecasting
 - [ ] Unit tests and CI/CD pipeline
 - [ ] Doctor dashboard with patient management UI
+- [ ] OAuth support for additional providers (Apple, Facebook)
+- [x] Google OAuth 2.0 integration
 - [x] PDF export for health reports
 - [x] HTML email templates for reminders and digests
 - [x] Weekly health digest email
@@ -378,3 +510,23 @@ MIT License — feel free to use, modify, and distribute.
 
 **Sneha**  
 GitHub: [sneh1117](https://github.com/sneh1117)
+
+---
+
+## 🎯 Google OAuth Implementation Details
+
+**Technical Flow:**
+1. Frontend receives Google credential token from OAuth popup
+2. Token sent to `/api/auth/google/` endpoint
+3. Backend verifies token using `google.oauth2.id_token.verify_oauth2_token()`
+4. Token validation includes clock skew tolerance (10 seconds)
+5. User lookup by email from verified token
+6. New users complete registration via `/api/auth/google/complete/`
+7. OAuth users have `set_unusable_password()` - cannot use traditional login
+
+**Security Features:**
+- Server-side token verification (never trust client-side validation)
+- Google's public key infrastructure used for verification
+- Email uniqueness enforced at database level
+- CORS properly configured for OAuth popup flow
+- Cross-Origin-Opener-Policy set to allow popup communication
