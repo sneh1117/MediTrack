@@ -1,10 +1,22 @@
 # MediTrack API
 
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![Django](https://img.shields.io/badge/Django-4.2-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue)
+![Redis](https://img.shields.io/badge/Redis-Queue-red)
+![Celery](https://img.shields.io/badge/Celery-Async%20Tasks-brightgreen)
+![AI](https://img.shields.io/badge/AI-Gemini-purple)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-success)](https://meditrack7.vercel.app)
+[![API Docs](https://img.shields.io/badge/API-Docs-blue)](https://meditrack.up.railway.app/api/docs/)
+
 A production-ready REST API for managing medications, tracking symptoms, and getting AI-powered health insights with automated smart reminders and weekly health digest emails.
 
-**Live Demo:** meditrack.up.railway.app  
-**API Docs:** meditrack.up.railway.app/api/docs/  
-**Frontend:** meditrack7.vercel.app
+**API Docs:** [meditrack.up.railway.app/api/docs/ ](https://meditrack.up.railway.app/api/docs/) 
+<img width="1363" height="716" alt="image" src="https://github.com/user-attachments/assets/f2e25f81-18cf-4be5-adb9-e1f2c4cb4902" />
+
+**Frontend:** [meditrack7.vercel.app](https://meditrack7.vercel.app/)
+<img width="1282" height="717" alt="image" src="https://github.com/user-attachments/assets/1e323bb0-ffb2-44e5-98f5-3d6e74d818fc" />
 
 ---
 
