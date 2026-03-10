@@ -40,7 +40,47 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'phone', 'date_of_birth','email_digest_enabled']
+        fields = ['id', 'username', 'email', 'role', 'phone', 'date_of_birth', 'email_digest_enabled']
+        read_only_fields = ['id', 'role']  # Role cannot be changed after creation
+    
+    def validate_username(self, value):
+        """Ensure username is unique when updating"""
+        user = self.instance
+        if user and User.objects.filter(username=value).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError('Username already taken')
+        return value
+    
+    def validate_email(self, value):
+        """Ensure email is unique when updating"""
+        user = self.instance
+        if user and User.objects.filter(email=value).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError('Email already taken')
+        return value
+    
+    def validate_phone(self, value):
+        """Basic phone validation"""
+        if value and len(value.strip()) > 0:
+            # Remove common characters
+            cleaned = value.replace(' ', '').replace('-', '').replace('(', '').replace(')', '').replace('+', '')
+            if not cleaned.isdigit():
+                raise serializers.ValidationError('Phone number should contain only digits, spaces, and +()-')
+            if len(cleaned) < 7 or len(cleaned) > 15:
+                raise serializers.ValidationError('Phone number should be between 7 and 15 digits')
+        return value
+    
+    def validate_date_of_birth(self, value):
+        """Ensure date of birth is valid"""
+        if value:
+            from datetime import date
+            today = date.today()
+            if value > today:
+                raise serializers.ValidationError('Date of birth cannot be in the future')
+            age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+            if age > 150:
+                raise serializers.ValidationError('Invalid date of birth')
+            if age < 0:
+                raise serializers.ValidationError('Date of birth cannot be in the future')
+        return value
 
 
 class PatientSerializer(serializers.ModelSerializer):
