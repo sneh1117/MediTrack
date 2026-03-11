@@ -252,14 +252,18 @@ class MoodLogSerializerTest(TestCase):
 
 class SymptomSummarySerializerTest(TestCase):
     def test_serializes_aggregated_data(self):
+        # SymptomSummarySerializer is read-only (used with QuerySet .values()),
+        # so test it by passing an object-like dict directly, not via is_valid()
         data = {
             "name": "Headache",
             "avg_severity": 6.5,
             "count": 3,
-            "last_occurrence": str(date.today()),
+            "last_occurrence": date.today(),
         }
-        s = SymptomSummarySerializer(data=data)
-        self.assertTrue(s.is_valid(), s.errors)
+        s = SymptomSummarySerializer(data)
+        self.assertEqual(s.data["symptom_name"], "Headache")
+        self.assertEqual(s.data["avg_severity"], 6.5)
+        self.assertEqual(s.data["count"], 3)
 
 
 class DoctorSymptomSerializerTest(TestCase):
@@ -552,11 +556,17 @@ class MoodLogViewSetTest(APITestCase):
 # ─────────────────────────────────────────────
 
 class ExportHealthReportTest(APITestCase):
+    """
+    URL: symptoms/urls.py → path('reports/export/', export_health_report, name='export-health-report')
+    Included in config/urls.py as path('api/', include('symptoms.urls'))
+    Resolved via reverse('export-health-report') → /api/reports/export/
+    """
     def setUp(self):
+        from django.urls import reverse
         self.client = APIClient()
         self.patient = make_patient()
         self.doctor = make_doctor()
-        self.url = "/api/symptoms/export-health-report/"
+        self.url = reverse("export-health-report")
 
     def _auth(self, user):
         self.client.force_authenticate(user=user)
@@ -589,21 +599,21 @@ class ExportHealthReportTest(APITestCase):
     def test_export_custom_days_param(self, mock_report):
         mock_report.return_value = b"%PDF fake"
         self._auth(self.patient)
-        self.client.get(self.url + "?days=60")
+        self.client.get(f"{self.url}?days=60")
         mock_report.assert_called_once_with(self.patient, days=60)
 
     @patch("symptoms.views.generate_health_report")
     def test_export_days_clamped_to_365(self, mock_report):
         mock_report.return_value = b"%PDF fake"
         self._auth(self.patient)
-        self.client.get(self.url + "?days=9999")
+        self.client.get(f"{self.url}?days=9999")
         mock_report.assert_called_once_with(self.patient, days=365)
 
     @patch("symptoms.views.generate_health_report")
     def test_export_invalid_days_defaults_to_30(self, mock_report):
         mock_report.return_value = b"%PDF fake"
         self._auth(self.patient)
-        self.client.get(self.url + "?days=notanumber")
+        self.client.get(f"{self.url}?days=notanumber")
         mock_report.assert_called_once_with(self.patient, days=30)
 
     @patch("symptoms.views.generate_health_report")

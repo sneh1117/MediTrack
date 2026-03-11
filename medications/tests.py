@@ -432,7 +432,7 @@ class MedicationViewSetTest(APITestCase):
             "start_date": str(date.today()),
             "custom_schedule": ["08:00", "20:00"],
         }
-        response = self.client.post(self.list_url, payload)
+        response = self.client.post(self.list_url, payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_ordering_by_name(self):
